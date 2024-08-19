@@ -15,10 +15,6 @@ def get_db_connection():
     )
     return connection
 
-# Hardcoded credentials for testing
-HARD_CODED_USERNAME = 'admin'
-HARD_CODED_PASSWORD = 'admin'
-
 @app.route('/', methods=['GET'])
 def home():
     if 'username' in session:
@@ -34,15 +30,22 @@ def waybill_entry_form():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
 
-        if username == HARD_CODED_USERNAME and password == HARD_CODED_PASSWORD:
-            session['username'] = username
+        db = get_db_connection()
+        cursor = db.cursor(dictionary=True)
+        cursor.execute('SELECT * FROM Users WHERE email = %s AND password = %s', (email, password))
+        user = cursor.fetchone()
+        cursor.close()
+        db.close()
+
+        if user:
+            session['username'] = user['username']
             session['last_activity'] = time.time()
             return redirect(url_for('waybill_entry_form'))
         else:
-            return jsonify(error='Invalid username or password'), 400
+            return jsonify(error='Invalid email or password'), 400
 
     return render_template('login.html')
 
@@ -52,34 +55,44 @@ def logout():
     session.pop('last_activity', None)
     return redirect(url_for('login'))
 
-@app.route('/register', methods=['POST'])
+@app.route('/register', methods=['GET', 'POST'])
 def register():
-    username = request.form.get('username')
-    password = request.form.get('password')
-    confirm_password = request.form.get('confirm_password')
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        branch = request.form.get('branch')
 
-    if not username or not password or not confirm_password:
-        return jsonify(error='All fields are required'), 400
+        if not username or not email or not password or not confirm_password or not branch:
+            return jsonify(error='All fields are required'), 400
 
-    if password != confirm_password:
-        return jsonify(error='Passwords do not match'), 400
+        if password != confirm_password:
+            return jsonify(error='Passwords do not match'), 400
 
-    db = get_db_connection()
-    cursor = db.cursor()
+        db = get_db_connection()
+        cursor = db.cursor()
 
-    try:
-        sql = 'INSERT INTO Users (username, password) VALUES (%s, %s)'
-        values = (username, password)
-        cursor.execute(sql, values)
-        db.commit()
-        return jsonify(message='Registration successful'), 201
-    except mysql.connector.Error as err:
-        print(f'Error registering user: {err}')
-        db.rollback()
-        return jsonify(error=f'Failed to register user: {err}'), 500
-    finally:
-        cursor.close()
-        db.close()
+        try:
+            # Check if email already exists
+            cursor.execute('SELECT * FROM Users WHERE email = %s', (email,))
+            if cursor.fetchone():
+                return jsonify(error='Email already registered'), 400
+
+            sql = 'INSERT INTO Users (username, email, password, branch) VALUES (%s, %s, %s, %s)'
+            values = (username, email, password, branch)
+            cursor.execute(sql, values)
+            db.commit()
+            return jsonify(message='Registration successful'), 201
+        except mysql.connector.Error as err:
+            print(f'Error registering user: {err}')
+            db.rollback()
+            return jsonify(error=f'Failed to register user: {err}'), 500
+        finally:
+            cursor.close()
+            db.close()
+
+    return render_template('register.html')
 
 @app.route('/submit_waybill', methods=['POST'])
 def submit_waybill():
@@ -91,7 +104,6 @@ def submit_waybill():
     if not date or not waybill_numbers or not booking_location or not status:
         return jsonify(error='All fields are required'), 400
 
-    # Split the waybill numbers by commas and strip any extra spaces
     waybill_numbers_list = [number.strip() for number in waybill_numbers.split(',')]
 
     db = get_db_connection()
@@ -104,7 +116,6 @@ def submit_waybill():
             VALUES (%s, %s, %s, %s)
             '''
             values = (date, waybill_number, booking_location, status)
-            print(f'Executing SQL: {sql} with values: {values}')  # Debug statement
             cursor.execute(sql, values)
         
         db.commit()

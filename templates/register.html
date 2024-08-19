@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Register</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -48,7 +48,8 @@
         .form-group .input-container {
             flex: 1;
         }
-        .form-group input {
+        .form-group input,
+        .form-group select {
             width: 100%;
             padding: 12px;
             border: 1px solid #ddd;
@@ -57,7 +58,8 @@
             font-size: 16px;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
-        .form-group input:focus {
+        .form-group input:focus,
+        .form-group select:focus {
             border-color: #3498db;
             outline: none;
             box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
@@ -118,8 +120,16 @@
     </style>
 </head>
 <body>
-    <h1>Login</h1>
-    <form id="loginForm" action="/login" method="POST">
+    <h1>Register</h1>
+    <form id="registerForm" action="/register" method="POST">
+        <!-- Username -->
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <div class="input-container">
+                <input type="text" id="username" name="username" required>
+            </div>
+        </div>
+        
         <!-- Email -->
         <div class="form-group">
             <label for="email">Email:</label>
@@ -135,13 +145,37 @@
                 <input type="password" id="password" name="password" required>
             </div>
         </div>
-        
-        <button type="submit">Login</button>
+
+        <!-- Confirm Password -->
+        <div class="form-group">
+            <label for="confirm_password">Confirm Password:</label>
+            <div class="input-container">
+                <input type="password" id="confirm_password" name="confirm_password" required>
+            </div>
+        </div>
+
+        <!-- Branch -->
+        <div class="form-group">
+            <label for="branch">Branch:</label>
+            <div class="input-container">
+                <select id="branch" name="branch" required>
+                    <option value="">Select Branch</option>
+                    <option value="Branch1">Salem</option>
+                    <option value="Branch2">Coimbatore</option>
+                    <option value="Branch5">Chennai</option>
+                    <option value="Branch3">Madurai</option>
+                    <option value="Branch4">Trichy</option>
+                    
+                </select>
+            </div>
+        </div>
+
+        <button type="submit">Register</button>
     </form>
 
     <!-- Register Box -->
     <div class="register-box">
-        <p>New user? <a href="/register">Register here</a></p>
+        <p>Already have an account? <a href="/login">Login here</a></p>
     </div>
 
     <!-- Toast Notification -->
@@ -157,34 +191,28 @@
             }, 3000);
         }
 
-        document.getElementById('loginForm').addEventListener('submit', function(event) {
+        document.getElementById('registerForm').addEventListener('submit', function(event) {
             event.preventDefault(); // Prevent form submission for testing
 
             const formData = new FormData(this);
-            fetch('/login', {
+            fetch('/register', {
                 method: 'POST',
                 body: formData
             })
-            .then(response => {
-                if (response.redirected) {
-                    window.location.href = response.url;
-                } else {
-                    return response.json();
-                }
-            })
+            .then(response => response.json())
             .then(data => {
                 if (data.error) {
                     showToast(data.error);
                 } else if (data.message) {
                     showToast(data.message);
-                    window.location.href = '/waybill_entry_form';
+                    window.location.href = '/login';
                 } else {
-                    showToast('Login failed.');
+                    showToast('Registration failed.');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showToast('Failed to login.');
+                showToast('Failed to register.');
             });
         });
     </script>
