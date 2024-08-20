@@ -16,11 +16,12 @@
             align-items: center;
             min-height: 100vh;
             flex-direction: column;
+            position: relative;
         }
         h1 {
             text-align: center;
             background: #fff;
-            padding: 0px;
+            padding: 10px;
             border-radius: 25px;
             color: #727272;
             margin: 10px;
@@ -32,7 +33,6 @@
             padding: 50px;
             border-radius: 15px;
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-            margin-top: 20px;
             width: 100%;
         }
         .form-group {
@@ -48,8 +48,7 @@
         .form-group .input-container {
             flex: 1;
         }
-        .form-group input,
-        .form-group select {
+        .form-group input {
             width: 100%;
             padding: 12px;
             border: 1px solid #ddd;
@@ -58,8 +57,7 @@
             font-size: 16px;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
-        .form-group input:focus,
-        .form-group select:focus {
+        .form-group input:focus {
             border-color: #3498db;
             outline: none;
             box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
@@ -80,8 +78,6 @@
         button:hover {
             background: #2980b9;
         }
-
-        /* Toast Notification Styles */
         .toast {
             visibility: hidden;
             max-width: 300px;
@@ -103,118 +99,78 @@
             visibility: visible;
             opacity: 1;
         }
-
-        /* Register Box Styles */
-        .register-box {
+        .login-link {
             text-align: center;
             margin-top: 20px;
         }
-        .register-box a {
-            color: #3498db;
+        .login-link a {
+            color: #fff;
             text-decoration: none;
+            font-size: 16px;
             font-weight: bold;
+            transition: color 0.3s ease;
         }
-        .register-box a:hover {
-            text-decoration: underline;
+        .login-link a:hover {
+            color: #3498db;
         }
     </style>
 </head>
 <body>
     <h1>Register</h1>
-    <form id="registerForm" action="/register" method="POST">
-        <!-- Username -->
+    <form method="POST">
         <div class="form-group">
             <label for="username">Username:</label>
             <div class="input-container">
                 <input type="text" id="username" name="username" required>
             </div>
         </div>
-        
-        <!-- Email -->
         <div class="form-group">
             <label for="email">Email:</label>
             <div class="input-container">
                 <input type="email" id="email" name="email" required>
             </div>
         </div>
-        
-        <!-- Password -->
         <div class="form-group">
             <label for="password">Password:</label>
             <div class="input-container">
                 <input type="password" id="password" name="password" required>
             </div>
         </div>
-
-        <!-- Confirm Password -->
         <div class="form-group">
             <label for="confirm_password">Confirm Password:</label>
             <div class="input-container">
                 <input type="password" id="confirm_password" name="confirm_password" required>
             </div>
         </div>
-
-        <!-- Branch -->
         <div class="form-group">
             <label for="branch">Branch:</label>
             <div class="input-container">
                 <select id="branch" name="branch" required>
-                    <option value="">Select Branch</option>
+                    <option value="" disabled selected>Select Branch</option>
                     <option value="Branch1">Salem</option>
                     <option value="Branch2">Coimbatore</option>
-                    <option value="Branch5">Chennai</option>
-                    <option value="Branch3">Madurai</option>
+                    <option value="Branch3">Chennai</option>
                     <option value="Branch4">Trichy</option>
-                    
+                    <option value="Branch5">Madurai</option>
                 </select>
             </div>
         </div>
-
         <button type="submit">Register</button>
     </form>
-
-    <!-- Register Box -->
-    <div class="register-box">
-        <p>Already have an account? <a href="/login">Login here</a></p>
+    <div class="login-link">
+        <p> <a href="/login">BACK TO LOGIN PAGE</a></p>
     </div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="toast"></div>
-
+    <div id="toast"></div>
     <script>
-        function showToast(message) {
+        // Display toast messages if any
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('error')) {
+            const error = urlParams.get('error');
             const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = 'toast show';
-            setTimeout(() => {
-                toast.className = 'toast';
-            }, 3000);
+            toast.textContent = error;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
-
-        document.getElementById('registerForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent form submission for testing
-
-            const formData = new FormData(this);
-            fetch('/register', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    showToast(data.error);
-                } else if (data.message) {
-                    showToast(data.message);
-                    window.location.href = '/login';
-                } else {
-                    showToast('Registration failed.');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Failed to register.');
-            });
-        });
     </script>
 </body>
 </html>

@@ -196,6 +196,18 @@
     <div id="toast" class="toast"></div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const oneMonthAgo = new Date(today);
+            oneMonthAgo.setMonth(today.getMonth() - 1);
+            
+            const maxDate = today.toISOString().split('T')[0]; // Today's date
+            const minDate = oneMonthAgo.toISOString().split('T')[0]; // Date one month ago
+
+            document.getElementById('date').setAttribute('max', maxDate);
+            document.getElementById('date').setAttribute('min', minDate);
+        });
+
         const INACTIVITY_TIMEOUT = 2 * 60 * 1000; // 2 minutes in milliseconds
         let inactivityTimer;
 
