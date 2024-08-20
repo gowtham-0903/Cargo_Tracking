@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 import mysql.connector
 import os
 import time
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', 'your_secret_key')
@@ -140,17 +141,20 @@ def submit_waybill():
                 if current_status == 'DELIVERED':
                     return jsonify(error='Cannot update status. Consignment is already delivered.'), 400
 
-            # Insert or update the status
+            # Insert or update the status with the current submission time
+            submission_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Current time in 'YYYY-MM-DD HH:MM:SS' format
+
             sql = '''
-            INSERT INTO Waybills (date, waybill_number, booking_location, status)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO Waybills (date, waybill_number, booking_location, status, submission_time)
+            VALUES (%s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE 
                 date = VALUES(date),
                 booking_location = VALUES(booking_location),
                 status = VALUES(status),
+                submission_time = VALUES(submission_time),
                 updated_at = CURRENT_TIMESTAMP
             '''
-            values = (date, waybill_number, booking_location, status)
+            values = (date, waybill_number, booking_location, status, submission_time)
             cursor.execute(sql, values)
 
         db.commit()
@@ -162,7 +166,6 @@ def submit_waybill():
     finally:
         cursor.close()
         db.close()
-
 
 if __name__ == '__main__':
     app.run(debug=True)

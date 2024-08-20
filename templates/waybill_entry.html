@@ -143,7 +143,7 @@
     <form id="waybillForm" action="/submit_waybill" method="POST">
         <!-- Date Picker -->
         <div class="form-group">
-            <label for="date"> Date:</label>
+            <label for="date">Date:</label>
             <div class="input-container">
                 <input type="date" id="date" name="date" required>
             </div>
@@ -174,7 +174,7 @@
         
         <!-- Dropdown Menu 2 (Status) -->
         <div class="form-group">
-            <label for="status"> Status:</label>
+            <label for="status">Status:</label>
             <div class="input-container">
                 <select id="status" name="status" required>
                     <option value="" disabled selected>Select a status</option>
@@ -188,6 +188,9 @@
                 </select>
             </div>
         </div>
+        
+        <!-- Hidden Input for Time -->
+        <input type="hidden" id="submission_time" name="submission_time">
         
         <button type="submit">Submit</button>
     </form>
@@ -234,6 +237,11 @@
         document.getElementById('waybillForm').addEventListener('submit', function(event) {
             event.preventDefault(); // Prevent form submission for testing
 
+            // Get the current time and date
+            const now = new Date();
+            const dateTimeString = now.toISOString(); // Example format: 2024-08-20T12:34:56.789Z
+            document.getElementById('submission_time').value = dateTimeString;
+
             const formData = new FormData(this);
             fetch('/submit_waybill', {
                 method: 'POST',
@@ -250,13 +258,9 @@
             });
         });
 
-        // Event listeners to reset timer on user activity
         document.addEventListener('mousemove', resetInactivityTimer);
         document.addEventListener('keydown', resetInactivityTimer);
-        document.addEventListener('click', resetInactivityTimer);
-
-        // Initialize timer
-        resetInactivityTimer();
+        resetInactivityTimer(); // Initialize timer
     </script>
 </body>
 </html>
