@@ -128,13 +128,31 @@ def submit_waybill():
 
     try:
         for waybill_number in waybill_numbers_list:
+            # Check if the consignment number already exists with 'BOOKED' status
+            cursor.execute('SELECT status FROM Waybills WHERE waybill_number = %s ORDER BY id DESC LIMIT 1', (waybill_number,))
+            result = cursor.fetchone()
+
+            if result:
+                current_status = result[0]
+                valid_statuses = ['BOOKED', 'DISPATCHED', 'RECEIVED', 'TAKEN FOR DELIVERY', 'DELIVERED', 'NOT DELIVERED', 'RETURN']
+                if valid_statuses.index(status) <= valid_statuses.index(current_status):
+                    return jsonify(error='Invalid status transition.'), 400
+                if current_status == 'DELIVERED':
+                    return jsonify(error='Cannot update status. Consignment is already delivered.'), 400
+
+            # Insert or update the status
             sql = '''
             INSERT INTO Waybills (date, waybill_number, booking_location, status)
             VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE 
+                date = VALUES(date),
+                booking_location = VALUES(booking_location),
+                status = VALUES(status),
+                updated_at = CURRENT_TIMESTAMP
             '''
             values = (date, waybill_number, booking_location, status)
             cursor.execute(sql, values)
-        
+
         db.commit()
         return jsonify(message='Waybill(s) submitted successfully'), 200
     except mysql.connector.Error as err:
@@ -144,6 +162,7 @@ def submit_waybill():
     finally:
         cursor.close()
         db.close()
+
 
 if __name__ == '__main__':
     app.run(debug=True)
