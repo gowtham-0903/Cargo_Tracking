@@ -136,10 +136,15 @@ def submit_waybill():
             if result:
                 current_status = result[0]
                 valid_statuses = ['BOOKED', 'DISPATCHED', 'RECEIVED', 'TAKEN FOR DELIVERY', 'DELIVERED', 'NOT DELIVERED', 'RETURN']
-                if valid_statuses.index(status) <= valid_statuses.index(current_status):
-                    return jsonify(error='Invalid status transition.'), 400
-                if current_status == 'DELIVERED':
-                    return jsonify(error='Cannot update status. Consignment is already delivered.'), 400
+                
+                if not session.get('is_admin'):
+                    if valid_statuses.index(status) <= valid_statuses.index(current_status):
+                        return jsonify(error='Invalid status transition.'), 400
+                    if current_status == 'DELIVERED':
+                        return jsonify(error='Cannot update status. Consignment is already delivered.'), 400
+                else:
+                    # Admin can overwrite the status
+                    pass
 
             # Insert or update the status with the current submission time
             submission_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Current time in 'YYYY-MM-DD HH:MM:SS' format

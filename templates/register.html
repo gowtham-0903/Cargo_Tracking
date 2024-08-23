@@ -48,7 +48,7 @@
         .form-group .input-container {
             flex: 1;
         }
-        .form-group input {
+        .form-group input, .form-group select {
             width: 100%;
             padding: 12px;
             border: 1px solid #ddd;
@@ -57,7 +57,7 @@
             font-size: 16px;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
-        .form-group input:focus {
+        .form-group input:focus, .form-group select:focus {
             border-color: #3498db;
             outline: none;
             box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
@@ -99,18 +99,20 @@
             visibility: visible;
             opacity: 1;
         }
-        .login-link {
+        .links {
             text-align: center;
             margin-top: 20px;
         }
-        .login-link a {
+        .links a {
             color: #fff;
             text-decoration: none;
             font-size: 16px;
             font-weight: bold;
             transition: color 0.3s ease;
+            display: block;
+            margin-bottom: 10px;
         }
-        .login-link a:hover {
+        .links a:hover {
             color: #3498db;
         }
     </style>
@@ -157,8 +159,9 @@
         </div>
         <button type="submit">Register</button>
     </form>
-    <div class="login-link">
-        <p> <a href="/login">BACK TO LOGIN PAGE</a></p>
+    <div class="links">
+        <a href="/login">BACK TO LOGIN PAGE</a>
+        <a href="/waybill_entry_form">GO TO WAYBILL ENTRY PAGE</a>
     </div>
     <div id="toast"></div>
     <script>

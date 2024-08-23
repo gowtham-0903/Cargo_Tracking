@@ -21,7 +21,7 @@
         h1 {
             text-align: center;
             background: #fff;
-            padding: 0px;
+            padding: 10px;
             border-radius: 25px;
             color: #727272;
             margin: 10px;
@@ -235,14 +235,25 @@
         }
 
         document.getElementById('waybillForm').addEventListener('submit', function(event) {
-            event.preventDefault(); // Prevent form submission for testing
+            const waybillNumbers = document.getElementById('waybillNumbers').value;
+            const invalidCharacters = /[^a-zA-Z0-9,\s]/; // Regex to match special characters
 
+            if (invalidCharacters.test(waybillNumbers)) {
+                event.preventDefault();
+                showToast('Waybill numbers contain invalid characters.');
+                return;
+            }
+            
             // Get the current time and date
             const now = new Date();
             const dateTimeString = now.toISOString(); // Example format: 2024-08-20T12:34:56.789Z
             document.getElementById('submission_time').value = dateTimeString;
-
+            
+            resetInactivityTimer(); // Reset timer on form submission
+            
+            // Handle form submission
             const formData = new FormData(this);
+            
             fetch('/submit_waybill', {
                 method: 'POST',
                 body: formData
@@ -258,9 +269,10 @@
             });
         });
 
+        // Handle form input to reset inactivity timer
+        document.addEventListener('input', resetInactivityTimer);
         document.addEventListener('mousemove', resetInactivityTimer);
         document.addEventListener('keydown', resetInactivityTimer);
-        resetInactivityTimer(); // Initialize timer
     </script>
 </body>
 </html>
