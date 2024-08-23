@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consignment Number Entry Form</title>
     <style>
+        /* Your existing styles */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -113,28 +114,25 @@
         .logout-button:hover {
             background: #c0392b;
         }
-        /* Toast Notification Styles */
         .toast {
-            visibility: hidden;
-            max-width: 300px;
-            margin: auto;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 5px;
-            padding: 16px;
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            opacity: 0;
-            transition: opacity 0.5s, visibility 0.5s;
-        }
-        .toast.show {
-            visibility: visible;
-            opacity: 1;
-        }
+        display: none;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #333;
+        color: #fff;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        transition: opacity 0.5s;
+    }
+    .toast.success {
+        background-color: #2ecc71; /* Green background for success */
+    }
+    .toast.error {
+        background-color: #e74c3c; /* Red background for error */
+    }
     </style>
 </head>
 <body>
@@ -177,7 +175,7 @@
             <label for="status">Status:</label>
             <div class="input-container">
                 <select id="status" name="status" required>
-                    <option value="" disabled selected>Select a status</option>
+                    <option value="" disabled selected>Select Status</option>
                     <option value="BOOKED">BOOKED</option>
                     <option value="DISPATCHED">DISPATCHED</option>
                     <option value="RECEIVED">RECEIVED</option>
@@ -189,90 +187,101 @@
             </div>
         </div>
         
-        <!-- Hidden Input for Time -->
-        <input type="hidden" id="submission_time" name="submission_time">
-        
-        <button type="submit">Submit</button>
+        <!-- Submit Button -->
+        <button type="submit">Submit Waybill</button>
     </form>
-
+    
     <!-- Toast Notification -->
     <div id="toast" class="toast"></div>
-
+    
     <script>
+        function showToast(message, type) {
+            const toast = document.getElementById('toast');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                    toast.style.opacity = '1';
+                }, 500);
+            }, 3000);
+        }
+    
         document.addEventListener('DOMContentLoaded', function() {
             const today = new Date();
             const oneMonthAgo = new Date(today);
             oneMonthAgo.setMonth(today.getMonth() - 1);
-            
+    
             const maxDate = today.toISOString().split('T')[0]; // Today's date
             const minDate = oneMonthAgo.toISOString().split('T')[0]; // Date one month ago
-
+    
             document.getElementById('date').setAttribute('max', maxDate);
             document.getElementById('date').setAttribute('min', minDate);
         });
-
+    
         const INACTIVITY_TIMEOUT = 2 * 60 * 1000; // 2 minutes in milliseconds
         let inactivityTimer;
-
+    
         function resetInactivityTimer() {
             clearTimeout(inactivityTimer);
             inactivityTimer = setTimeout(() => {
                 window.location.href = '/logout';
             }, INACTIVITY_TIMEOUT);
         }
-
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.className = 'toast show';
-            setTimeout(() => {
-                toast.className = 'toast';
-            }, 3000);
-        }
-
+    
         function resetForm() {
             document.getElementById('waybillForm').reset();
         }
-
+    
         document.getElementById('waybillForm').addEventListener('submit', function(event) {
-            const waybillNumbers = document.getElementById('waybillNumbers').value;
-            const invalidCharacters = /[^a-zA-Z0-9,\s]/; // Regex to match special characters
-
+            event.preventDefault(); // Prevent default form submission
+            
+            const formData = new FormData(this);
+            const waybillNumbers = formData.get('waybillNumbers');
+            
+            // Validate Waybill Numbers
+            const invalidCharacters = /[^A-Z0-9,\s]/;
+            const hasLowerCase = /[a-z]/.test(waybillNumbers);
+    
             if (invalidCharacters.test(waybillNumbers)) {
-                event.preventDefault();
-                showToast('Waybill numbers contain invalid characters.');
+                showToast('Invalid characters detected.', 'error');
                 return;
             }
-            
-            // Get the current time and date
-            const now = new Date();
-            const dateTimeString = now.toISOString(); // Example format: 2024-08-20T12:34:56.789Z
-            document.getElementById('submission_time').value = dateTimeString;
-            
-            resetInactivityTimer(); // Reset timer on form submission
-            
-            // Handle form submission
-            const formData = new FormData(this);
-            
-            fetch('/submit_waybill', {
-                method: 'POST',
+    
+            if (hasLowerCase) {
+                showToast('Please use uppercase letters only.', 'error');
+                return;
+            }
+    
+            // Proceed with AJAX form submission or any other logic here
+            fetch(this.action, {
+                method: this.method,
                 body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                showToast(data.message || 'Form submitted successfully!');
-                resetForm();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Failed to submit form.');
+            }).then(response => {
+                console.log('Response Status:', response.status); // Log response status
+                return response.json();
+            }).then(data => {
+                console.log('Response Data:', data); // Log response data
+                
+                if (data.message) {
+                    showToast(data.message, 'success');
+                    resetForm(); // Reset the form after successful submission
+                } else if (data.error) {
+                    showToast(data.error, 'error');
+                } else {
+                    showToast('Unexpected response from server.', 'error');
+                }
+            }).catch(error => {
+                console.error('Submission Error:', error); // Log any errors
+                showToast('An error occurred. Please try again.', 'error');
             });
         });
-
-        // Handle form input to reset inactivity timer
-        document.addEventListener('input', resetInactivityTimer);
+    
         document.addEventListener('mousemove', resetInactivityTimer);
         document.addEventListener('keydown', resetInactivityTimer);
+        resetInactivityTimer(); // Initialize timer
     </script>
 </body>
 </html>

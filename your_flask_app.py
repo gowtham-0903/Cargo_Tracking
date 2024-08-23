@@ -35,19 +35,19 @@ def login():
         user_type = request.form.get('user_type')  # Added field to distinguish between user and admin
 
         if not email or not password or not user_type:
-            return jsonify(error='Email, password, and user type are required'), 400
+            return redirect(url_for('login', error='All fields are required'))
 
         db = get_db_connection()
         cursor = db.cursor(dictionary=True)
 
         if user_type == 'admin':
-            # Admin login
-            cursor.execute('SELECT * FROM Admins WHERE email = %s AND password = %s', (email, password))
+            # Admin login (case-sensitive comparison)
+            cursor.execute('SELECT * FROM Admins WHERE BINARY email = %s AND BINARY password = %s', (email, password))
             user = cursor.fetchone()
             redirect_url = 'register'
         else:
-            # User login
-            cursor.execute('SELECT * FROM Users WHERE email = %s AND password = %s', (email, password))
+            # User login (case-sensitive comparison)
+            cursor.execute('SELECT * FROM Users WHERE BINARY email = %s AND BINARY password = %s', (email, password))
             user = cursor.fetchone()
             redirect_url = 'waybill_entry_form'
         
@@ -60,7 +60,7 @@ def login():
             session['is_admin'] = (user_type == 'admin')
             return redirect(url_for(redirect_url))
         else:
-            return jsonify(error='Invalid email or password'), 400
+            return redirect(url_for('login', error='Invalid email or password'))
 
     return render_template('login.html')
 
@@ -139,7 +139,7 @@ def submit_waybill():
                 
                 if not session.get('is_admin'):
                     if valid_statuses.index(status) <= valid_statuses.index(current_status):
-                        return jsonify(error='Invalid status transition.'), 400
+                        return jsonify(error='Status already updated.'), 400
                     if current_status == 'DELIVERED':
                         return jsonify(error='Cannot update status. Consignment is already delivered.'), 400
                 else:
