@@ -247,11 +247,13 @@
     
             if (invalidCharacters.test(waybillNumbers)) {
                 showToast('Invalid characters detected.', 'error');
+                resetForm(); // Reset the form after successful submission
                 return;
             }
     
             if (hasLowerCase) {
                 showToast('Please use uppercase letters only.', 'error');
+                resetForm(); // Reset the form after successful submission
                 return;
             }
     
@@ -270,12 +272,15 @@
                     resetForm(); // Reset the form after successful submission
                 } else if (data.error) {
                     showToast(data.error, 'error');
+                    resetForm(); // Reset the form after successful submission
                 } else {
                     showToast('Unexpected response from server.', 'error');
+                    resetForm(); // Reset the form after successful submission
                 }
             }).catch(error => {
                 console.error('Submission Error:', error); // Log any errors
                 showToast('An error occurred. Please try again.', 'error');
+                resetForm(); // Reset the form after successful submission
             });
         });
     
