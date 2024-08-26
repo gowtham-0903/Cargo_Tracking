@@ -9,9 +9,9 @@ app.secret_key = os.getenv('SECRET_KEY', 'your_secret_key')
 
 def get_db_connection():
     return mysql.connector.connect(
-        host=os.getenv('DB_HOST', 'localhost'),
+        host=os.getenv('DB_HOST', '34.93.117.53'),
         user=os.getenv('DB_USER', 'root'),
-        password=os.getenv('DB_PASSWORD', 'Gowtham@0903'),
+        password=os.getenv('DB_PASSWORD', 'TwedO@#0903'),
         database=os.getenv('DB_NAME', 'cargo_tracking_db')
     )
 
