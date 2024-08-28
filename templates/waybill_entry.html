@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consignment Number Entry Form</title>
     <style>
-        /* Your existing styles */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -115,24 +114,24 @@
             background: #c0392b;
         }
         .toast {
-        display: none;
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background-color: #333;
-        color: #fff;
-        padding: 10px;
-        border-radius: 5px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        z-index: 1000;
-        transition: opacity 0.5s;
-    }
-    .toast.success {
-        background-color: #2ecc71; /* Green background for success */
-    }
-    .toast.error {
-        background-color: #e74c3c; /* Red background for error */
-    }
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+        .toast.success {
+            background-color: #2ecc71; /* Green background for success */
+        }
+        .toast.error {
+            background-color: #e74c3c; /* Red background for error */
+        }
     </style>
 </head>
 <body>
@@ -159,7 +158,7 @@
         <div class="form-group">
             <label for="booking_location">Delivery Branch:</label>
             <div class="input-container">
-                <select id="booking_location" name="booking_location" required>
+                <select id="booking_location" name="booking_location" required disabled>
                     <option value="" disabled selected>Select Delivery Branch</option>
                     <option value="SALEM">SALEM</option>
                     <option value="COIMBATORE">COIMBATORE</option>
@@ -179,7 +178,7 @@
                     <option value="BOOKED">BOOKED</option>
                     <option value="DISPATCHED">DISPATCHED</option>
                     <option value="RECEIVED">RECEIVED</option>
-                    <option value="D">TAKEN FOR DELIVERY</option>
+                    <option value="TAKEN FOR DELIVERY">TAKEN FOR DELIVERY</option>
                     <option value="DELIVERED">DELIVERED</option>
                     <option value="NOT DELIVERED">NOT DELIVERED</option>
                     <option value="RETURN">RETURN</option>
@@ -239,24 +238,30 @@
             event.preventDefault(); // Prevent default form submission
             
             const formData = new FormData(this);
+            const dateInput = document.getElementById('date');
+            const dateValue = dateInput.value.split('T')[0]; // Get only the date part
+
+            // Update the formData to include only the date part
+            formData.set('date', dateValue);
+
             const waybillNumbers = formData.get('waybillNumbers');
             
             // Validate Waybill Numbers
             const invalidCharacters = /[^A-Z0-9,\s]/;
             const hasLowerCase = /[a-z]/.test(waybillNumbers);
-    
+
             if (invalidCharacters.test(waybillNumbers)) {
                 showToast('Invalid characters detected.', 'error');
                 resetForm(); // Reset the form after successful submission
                 return;
             }
-    
+
             if (hasLowerCase) {
                 showToast('Please use uppercase letters only.', 'error');
                 resetForm(); // Reset the form after successful submission
                 return;
             }
-    
+
             // Proceed with AJAX form submission or any other logic here
             fetch(this.action, {
                 method: this.method,

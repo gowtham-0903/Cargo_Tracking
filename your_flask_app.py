@@ -42,7 +42,7 @@ def login():
 
         if user_type == 'admin':
             # Admin login (case-sensitive comparison)
-            cursor.execute('SELECT * FROM Admins WHERE BINARY email = %s AND BINARY password = %s', (email, password))
+            cursor.execute('SELECT * FROM admins WHERE BINARY email = %s AND BINARY password = %s', (email, password))
             user = cursor.fetchone()
             redirect_url = 'register'
         else:
@@ -58,11 +58,13 @@ def login():
             session['username'] = user['username']
             session['last_activity'] = time.time()
             session['is_admin'] = (user_type == 'admin')
+            session['branch'] = user['branch']  # Store branch in session
             return redirect(url_for(redirect_url))
         else:
             return redirect(url_for('login', error='Invalid email or password'))
 
     return render_template('login.html')
+
 
 @app.route('/logout', methods=['GET'])
 def logout():
@@ -114,50 +116,64 @@ def register():
 
 @app.route('/submit_waybill', methods=['POST'])
 def submit_waybill():
-    date = request.form.get('date')
+    date = request.form.get('date')  # Expected format: 'YYYY-MM-DD'
     waybill_numbers = request.form.get('waybillNumbers')
-    booking_location = request.form.get('booking_location')
     status = request.form.get('status')
 
-    if not date or not waybill_numbers or not booking_location or not status:
-        return jsonify(error='All fields are required'), 400
+    # Validate date format
+    try:
+        datetime.strptime(date, '%Y-%m-%d')
+    except ValueError:
+        return jsonify(error='Invalid date format'), 400
 
     waybill_numbers_list = [number.strip() for number in waybill_numbers.split(',')]
 
-    db = get_db_connection()
-    cursor = db.cursor()
+    # Ensure the user is logged in
+    if 'username' not in session:
+        return jsonify(error='User not logged in'), 401
 
+    # Fetch the user's branch
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True)
+    
+    cursor.execute('SELECT branch FROM Users WHERE username = %s', (session['username'],))
+    user = cursor.fetchone()
+    
+    if not user:
+        cursor.close()
+        db.close()
+        return jsonify(error='User not found'), 404
+    
+    booking_location = user['branch']  # Set branch based on the logged-in user
+
+    valid_statuses = ['BOOKED', 'DISPATCHED', 'RECEIVED', 'TAKEN FOR DELIVERY', 'DELIVERED', 'NOT DELIVERED', 'RETURN']
+    
     try:
         for waybill_number in waybill_numbers_list:
-            # Check if the consignment number already exists with 'BOOKED' status
             cursor.execute('SELECT status FROM Waybills WHERE waybill_number = %s ORDER BY id DESC LIMIT 1', (waybill_number,))
             result = cursor.fetchone()
 
             if result:
-                current_status = result[0]
-                valid_statuses = ['BOOKED', 'DISPATCHED', 'RECEIVED', 'TAKEN FOR DELIVERY', 'DELIVERED', 'NOT DELIVERED', 'RETURN']
-                
+                current_status = result['status']
+                print(f"Current Status: {current_status}")  # Debugging output
+                print(f"New Status: {status}")  # Debugging output
+
                 if not session.get('is_admin'):
                     if valid_statuses.index(status) <= valid_statuses.index(current_status):
                         return jsonify(error='Status already updated.'), 400
                     if current_status == 'DELIVERED':
                         return jsonify(error='Cannot update status. Consignment is already delivered.'), 400
-                else:
-                    # Admin can overwrite the status
-                    pass
 
-            # Insert or update the status with the current submission time
             submission_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Current time in 'YYYY-MM-DD HH:MM:SS' format
 
             sql = '''
-            INSERT INTO Waybills (date, waybill_number, booking_location, status, submission_time)
+            INSERT INTO Waybills (date, waybill_number, booking_location, status, updated_at)
             VALUES (%s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE 
                 date = VALUES(date),
                 booking_location = VALUES(booking_location),
                 status = VALUES(status),
-                submission_time = VALUES(submission_time),
-                updated_at = CURRENT_TIMESTAMP
+                updated_at = VALUES(updated_at)
             '''
             values = (date, waybill_number, booking_location, status, submission_time)
             cursor.execute(sql, values)
