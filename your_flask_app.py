@@ -58,19 +58,19 @@ def login():
             session['username'] = user['username']
             session['last_activity'] = time.time()
             session['is_admin'] = (user_type == 'admin')
-            session['branch'] = user['branch']  # Store branch in session
+            session['branch'] = user.get('branch')  # Store branch in session if available
             return redirect(url_for(redirect_url))
         else:
             return redirect(url_for('login', error='Invalid email or password'))
 
     return render_template('login.html')
 
-
 @app.route('/logout', methods=['GET'])
 def logout():
     session.pop('username', None)
     session.pop('is_admin', None)
     session.pop('last_activity', None)
+    session.pop('branch', None)
     return redirect(url_for('login'))
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -119,6 +119,7 @@ def submit_waybill():
     date = request.form.get('date')  # Expected format: 'YYYY-MM-DD'
     waybill_numbers = request.form.get('waybillNumbers')
     status = request.form.get('status')
+    booking_location = request.form.get('booking_location')  # Booking location from the form
 
     # Validate date format
     try:
@@ -136,15 +137,19 @@ def submit_waybill():
     db = get_db_connection()
     cursor = db.cursor(dictionary=True)
     
-    cursor.execute('SELECT branch FROM Users WHERE username = %s', (session['username'],))
-    user = cursor.fetchone()
-    
-    if not user:
-        cursor.close()
-        db.close()
-        return jsonify(error='User not found'), 404
-    
-    booking_location = user['branch']  # Set branch based on the logged-in user
+    if not session.get('is_admin'):
+        # Fetch the user's branch if not an admin
+        cursor.execute('SELECT branch FROM Users WHERE username = %s', (session['username'],))
+        user = cursor.fetchone()
+        if not user:
+            cursor.close()
+            db.close()
+            return jsonify(error='User not found'), 404
+        
+        user_branch = user['branch']  # Set branch based on the logged-in user
+    else:
+        # Admins should use the booking_location provided in the form
+        user_branch = booking_location
 
     valid_statuses = ['BOOKED', 'DISPATCHED', 'RECEIVED', 'TAKEN FOR DELIVERY', 'DELIVERED', 'NOT DELIVERED', 'RETURN']
     
@@ -166,6 +171,9 @@ def submit_waybill():
 
             submission_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')  # Current time in 'YYYY-MM-DD HH:MM:SS' format
 
+            # Use user_branch for non-admin users, and booking_location for admins
+            effective_branch = booking_location if session.get('is_admin') else user_branch
+
             sql = '''
             INSERT INTO Waybills (date, waybill_number, booking_location, status, updated_at)
             VALUES (%s, %s, %s, %s, %s)
@@ -175,7 +183,7 @@ def submit_waybill():
                 status = VALUES(status),
                 updated_at = VALUES(updated_at)
             '''
-            values = (date, waybill_number, booking_location, status, submission_time)
+            values = (date, waybill_number, effective_branch, status, submission_time)
             cursor.execute(sql, values)
 
         db.commit()

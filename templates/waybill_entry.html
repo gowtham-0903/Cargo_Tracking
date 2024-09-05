@@ -218,6 +218,11 @@
     
             document.getElementById('date').setAttribute('max', maxDate);
             document.getElementById('date').setAttribute('min', minDate);
+    
+            // Enable or disable branch selection based on user role
+            const isAdmin = {{ session['is_admin']|tojson }};
+            const bookingLocationSelect = document.getElementById('booking_location');
+            bookingLocationSelect.disabled = !isAdmin;
         });
     
         const INACTIVITY_TIMEOUT = 2 * 60 * 1000; // 2 minutes in milliseconds
